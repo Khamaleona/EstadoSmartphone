@@ -78,11 +78,8 @@ public class MainActivity extends AppCompatActivity {
                 simOperator.setText(tm.getSimOperatorName());
                 simSerial.setText(tm.getSimSerialNumber());
                 susID.setText(tm.getSubscriberId());
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    voiceType.setText(getNetworkTypeName(tm.getVoiceNetworkType()));
-                }else{
-                    voiceType.setText(getNetworkTypeName(tm.getNetworkType()));
-                }
+
+                voiceType.setText(getPhoneTypeName(tm.getPhoneType()));
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     redType.setText(getNetworkTypeName(tm.getDataNetworkType()));
@@ -94,6 +91,30 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private String getPhoneTypeName(int i)
+    {
+        String result="";
+
+        switch (i){
+            case 0:
+                result = "None";
+            break;
+
+            case 1:
+                result ="GSM";
+            break;
+
+            case 2:
+                result = "CDMA";
+            break;
+
+            case 3:
+                result = "SIP";
+            break;
+        }
+
+        return result;
+    }
     private String getNetworkTypeName(int i){
 
         String result="";
