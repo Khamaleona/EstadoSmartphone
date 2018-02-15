@@ -78,19 +78,77 @@ public class MainActivity extends AppCompatActivity {
                 simOperator.setText(tm.getSimOperatorName());
                 simSerial.setText(tm.getSimSerialNumber());
                 susID.setText(tm.getSubscriberId());
-               /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    voiceType.setText(tm.getVoiceNetworkType());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    voiceType.setText(getNetworkTypeName(tm.getVoiceNetworkType()));
                 }else{
-                    voiceType.setText(tm.getNetworkType());
+                    voiceType.setText(getNetworkTypeName(tm.getNetworkType()));
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    redType.setText(tm.getDataNetworkType());
+                    redType.setText(getNetworkTypeName(tm.getDataNetworkType()));
                 }else{
-                    redType.setText(tm.getNetworkType());
-                }*/
+                    redType.setText(getNetworkTypeName(tm.getNetworkType()));
+                }
 
             }
         });
+    }
+
+    private String getNetworkTypeName(int i){
+
+        String result="";
+
+        switch (i)
+        {
+            case 7:
+                result = ("1xRTT");
+                break;
+            case 4:
+                result = ("CDMA");
+                break;
+            case 2:
+                result = ("EDGE");
+                break;
+            case 14:
+                result = ("eHRPD");
+                break;
+            case 5:
+                result = ("EVDO rev. 0");
+                break;
+            case 6:
+                result = ("EVDO rev. A");
+                break;
+            case 12:
+                result = ("EVDO rev. B");
+                break;
+            case 1:
+                result = ("GPRS");
+                break;
+            case 8:
+                result = ("HSDPA");
+                break;
+            case 10:
+                result = ("HSPA");
+                break;
+            case 15:
+                result = ("HSPA+");
+                break;
+            case 9:
+                result = ("HSUPA");
+                break;
+            case 11:
+                result = ("iDen");
+                break;
+            case 13:
+                result = ("LTE");
+                break;
+            case 3:
+                result = ("UMTS");
+                break;
+            case 0:
+                result = ("Unknown");
+                break;
+        }
+        return result;
     }
 }
