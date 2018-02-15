@@ -1,7 +1,7 @@
 package com.example.irenecarrasco.estadosmartphone;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
@@ -16,6 +16,7 @@ import android.widget.TextView;
 public class MainActivity extends AppCompatActivity {
 
     private Button obtenerDatos;
+    private Button datosTiempoReal;
     private TextView id;
     private TextView phoneNumber;
     private TextView swVersion;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         susID = findViewById(R.id.susIDValue);
         redType = findViewById(R.id.redTypeValue);
         voiceType = findViewById(R.id.voiceTypeValue);
+        datosTiempoReal = findViewById(R.id.obtenerDatosTiempoReal);
 
         tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
     }
@@ -87,6 +89,14 @@ public class MainActivity extends AppCompatActivity {
                     redType.setText(getNetworkTypeName(tm.getNetworkType()));
                 }
 
+            }
+        });
+
+        datosTiempoReal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, TiempoReal.class);
+                startActivity(intent);
             }
         });
     }
