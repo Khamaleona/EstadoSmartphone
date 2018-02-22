@@ -6,9 +6,16 @@ import android.telecom.TelecomManager;
 import android.telephony.CellLocation;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
+import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
+import android.telephony.cdma.CdmaCellLocation;
+import android.telephony.gsm.GsmCellLocation;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import java.net.URI;
+import java.util.concurrent.BrokenBarrierException;
 
 public class TiempoReal extends AppCompatActivity {
 
@@ -44,7 +51,8 @@ public class TiempoReal extends AppCompatActivity {
                 |PhoneStateListener.LISTEN_DATA_ACTIVITY
                 |PhoneStateListener.LISTEN_CALL_FORWARDING_INDICATOR
                 |PhoneStateListener.LISTEN_DATA_CONNECTION_STATE
-                |PhoneStateListener.LISTEN_SERVICE_STATE;
+                |PhoneStateListener.LISTEN_SERVICE_STATE
+                |PhoneStateListener.LISTEN_SIGNAL_STRENGTHS;
         PhoneStateListener listenerTelefono = new PhoneStateListener(){
 
             //Estado de la llamada
@@ -108,9 +116,61 @@ public class TiempoReal extends AppCompatActivity {
             }
 
             //Localización
-//            public void onCellLocationChanged(CellLocation localizacion){
-//
-//            }
+            public void onCellLocationChanged(CellLocation localizacion) {
+                String posicion = "";
+                if (localizacion instanceof CdmaCellLocation){
+                    posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLatitude());
+                }else if(localizacion instanceof GsmCellLocation){
+                    posicion += String.valueOf(((GsmCellLocation) localizacion).getCid());
+                }
+                location.setText(posicion);
+            }
+
+            //Dirección del tráfico
+            public void onDataActivity(int direccion){
+                switch (direccion){
+                    case TelephonyManager.DATA_ACTIVITY_NONE:
+                        dataImage.setImageResource(R.drawable.nodata);
+                        break;
+                    case TelephonyManager.DATA_ACTIVITY_IN:
+                        dataImage.setImageResource(R.drawable.indata);
+                        break;
+                    case TelephonyManager.DATA_ACTIVITY_OUT:
+                        dataImage.setImageResource(R.drawable.outdata);
+                        break;
+                    case TelephonyManager.DATA_ACTIVITY_INOUT:
+                        dataImage.setImageResource(R.drawable.bidata);
+                        break;
+                    default:
+                        dataImage.setImageResource(R.drawable.nodata);
+                        break;
+                }
+                super.onDataActivity(direccion);
+            }
+
+            //Potencia de la señal
+            public void onSignalStrengthsChanged(SignalStrength fuerza){
+                Log.i("Fuerza", String.valueOf(fuerza.getLevel()));
+                System.out.println("FUERZA: "+fuerza.getLevel());
+                switch (fuerza.getLevel()){
+                    case 0:
+                        signalLevel.setImageResource(R.drawable.level1);
+                        break;
+                    case 1:
+                        signalLevel.setImageResource(R.drawable.level2);
+                        break;
+                    case 2:
+                        signalLevel.setImageResource(R.drawable.level3);
+                        break;
+                    case 3:
+                        signalLevel.setImageResource(R.drawable.level4);
+                        break;
+                    case 4:
+                        signalLevel.setImageResource(R.drawable.level5);
+                        break;
+                }
+                super.onSignalStrengthsChanged(fuerza);
+            }
 
         };
         tm.listen(listenerTelefono, eventos);
