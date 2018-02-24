@@ -1,5 +1,6 @@
 package com.example.irenecarrasco.estadosmartphone;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telecom.TelecomManager;
@@ -11,10 +12,13 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.concurrent.BrokenBarrierException;
 
 public class TiempoReal extends AppCompatActivity {
@@ -25,6 +29,7 @@ public class TiempoReal extends AppCompatActivity {
     private TextView location;
     private ImageView signalLevel;
     private ImageView dataImage;
+    private Button goToLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +47,7 @@ public class TiempoReal extends AppCompatActivity {
         location = findViewById(R.id.locationValue);
         signalLevel = findViewById(R.id.signalLevelImage);
         dataImage = findViewById(R.id.dataImage);
+        goToLocation = findViewById(R.id.goToLocalization);
     }
 
     private void inicializarListener(){
@@ -118,10 +124,13 @@ public class TiempoReal extends AppCompatActivity {
             //Localización
             public void onCellLocationChanged(CellLocation localizacion) {
                 String posicion = "";
+
                 if (localizacion instanceof CdmaCellLocation){
-                    posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLatitude());
+                    posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLatitude())+",";
+                    posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLongitude());
                 }else if(localizacion instanceof GsmCellLocation){
-                    posicion += String.valueOf(((GsmCellLocation) localizacion).getCid());
+                    posicion += String.valueOf(((GsmCellLocation) localizacion).getCid())+",";
+                    posicion += String.valueOf(((GsmCellLocation) localizacion).getLac());
                 }
                 location.setText(posicion);
             }
@@ -174,6 +183,14 @@ public class TiempoReal extends AppCompatActivity {
 
         };
         tm.listen(listenerTelefono, eventos);
+
+        goToLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(TiempoReal.this, MapsActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
 
