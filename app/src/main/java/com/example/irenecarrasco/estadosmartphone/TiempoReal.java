@@ -1,9 +1,7 @@
 package com.example.irenecarrasco.estadosmartphone;
 
-import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.telecom.TelecomManager;
 import android.telephony.CellLocation;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -12,16 +10,16 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.concurrent.BrokenBarrierException;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
 
-public class TiempoReal extends AppCompatActivity {
+public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback {
 
     private TextView callStatus;
     private TextView connectionStatus;
@@ -29,25 +27,51 @@ public class TiempoReal extends AppCompatActivity {
     private TextView location;
     private ImageView signalLevel;
     private ImageView dataImage;
-    private Button goToLocation;
+    private MapView mapView;
+    private LatLng coordenadas;
+
+    private static final String MAP_VIEW_BUNDLE_KEY = "MapViewBundleKey";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tiempo_real);
 
-        inicializarComponentes();
+        inicializarComponentes(savedInstanceState);
         inicializarListener();
     }
 
-    private void inicializarComponentes(){
+    private void inicializarComponentes(Bundle savedInstanceState){
         callStatus = findViewById(R.id.callStatusValue);
         connectionStatus = findViewById(R.id.connectionStatusValue);
         serviceStatus = findViewById(R.id.serviceStatusValue);
         location = findViewById(R.id.locationValue);
         signalLevel = findViewById(R.id.signalLevelImage);
         dataImage = findViewById(R.id.dataImage);
-        goToLocation = findViewById(R.id.goToLocalization);
+
+        coordenadas = new LatLng(-1, -1);
+
+        Bundle mapViewBundle = null;
+        if(savedInstanceState != null){
+            mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        }
+
+        mapView = findViewById(R.id.mapa);
+        mapView.onCreate(mapViewBundle);
+        mapView.getMapAsync(this);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState){
+        super.onSaveInstanceState(outState);
+
+        Bundle mapViewBundle = outState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        if(mapViewBundle == null){
+            mapViewBundle = new Bundle();
+            outState.putBundle(MAP_VIEW_BUNDLE_KEY, mapViewBundle);
+        }
+
+        mapView.onSaveInstanceState(mapViewBundle);
     }
 
     private void inicializarListener(){
@@ -128,9 +152,11 @@ public class TiempoReal extends AppCompatActivity {
                 if (localizacion instanceof CdmaCellLocation){
                     posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLatitude())+",";
                     posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLongitude());
+                    coordenadas = new LatLng(((CdmaCellLocation) localizacion).getBaseStationLatitude(),((CdmaCellLocation) localizacion).getBaseStationLongitude());
                 }else if(localizacion instanceof GsmCellLocation){
                     posicion += String.valueOf(((GsmCellLocation) localizacion).getCid())+",";
                     posicion += String.valueOf(((GsmCellLocation) localizacion).getLac());
+                    coordenadas = new LatLng(((GsmCellLocation) localizacion).getCid(),((GsmCellLocation) localizacion).getLac());
                 }
                 location.setText(posicion);
             }
@@ -183,15 +209,15 @@ public class TiempoReal extends AppCompatActivity {
 
         };
         tm.listen(listenerTelefono, eventos);
-
-        goToLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(TiempoReal.this, MapsActivity.class);
-                startActivity(intent);
-            }
-        });
     }
 
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        GoogleMap gMap = googleMap;
+        gMap.setMinZoomPreference(12);
+        //LatLng ny = new LatLng(40.7143528, -74.0059731);
+        //gMap.moveCamera(CameraUpdateFactory.newLatLng(ny));
+        gMap.moveCamera(CameraUpdateFactory.newLatLng(coordenadas));
+    }
 }

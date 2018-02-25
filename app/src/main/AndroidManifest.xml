@@ -29,7 +29,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".TiempoReal" />
-        <activity android:name=".MapsActivity"></activity>
     </application>
 
 </manifest>
