@@ -1,5 +1,6 @@
 package com.example.irenecarrasco.estadosmartphone;
 
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.CellLocation;
@@ -9,7 +10,8 @@ import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
-import android.util.Log;
+import android.util.JsonReader;
+import android.util.Pair;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,6 +20,14 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -29,19 +39,26 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
     private ImageView dataImage;
     private MapView mapView;
     private LatLng coordenadas;
+    private String mcc;
+    private String mnc;
+    private int cellid;
+    private int lac;
 
-    private static final String MAP_VIEW_BUNDLE_KEY = "MapViewBundleKey";
+    private static final String OPENCELLID_KEY = "9c14bfb39bdd69";
+    private static final String MAP_VIEW_BUNDLE_KEY = "AIzaSyDnesjxf6CsPatAcVdISbjyHPZwyYRX7FQ";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tiempo_real);
 
-        inicializarComponentes(savedInstanceState);
+        inicializarComponentes();
+        preparingURL();
         inicializarListener();
+        cargarMapa(savedInstanceState);
     }
 
-    private void inicializarComponentes(Bundle savedInstanceState){
+    private void inicializarComponentes(){
         callStatus = findViewById(R.id.callStatusValue);
         connectionStatus = findViewById(R.id.connectionStatusValue);
         serviceStatus = findViewById(R.id.serviceStatusValue);
@@ -50,14 +67,16 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
         dataImage = findViewById(R.id.dataImage);
 
         coordenadas = new LatLng(-1, -1);
+    }
 
+    private void cargarMapa(Bundle bundle){
         Bundle mapViewBundle = null;
-        if(savedInstanceState != null){
-            mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        if(bundle != null){
+            mapViewBundle = bundle.getBundle(MAP_VIEW_BUNDLE_KEY);
         }
 
         mapView = findViewById(R.id.mapa);
-        mapView.onCreate(mapViewBundle);
+        mapView.onCreate(bundle);
         mapView.getMapAsync(this);
     }
 
@@ -74,8 +93,50 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
         mapView.onSaveInstanceState(mapViewBundle);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mapView.onResume();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mapView.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mapView.onStop();
+    }
+    @Override
+    protected void onPause() {
+        mapView.onPause();
+        super.onPause();
+    }
+    @Override
+    protected void onDestroy() {
+        mapView.onDestroy();
+        super.onDestroy();
+    }
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
+    }
+
     private void inicializarListener(){
+
         TelephonyManager tm = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+
+        String networkOperator = tm.getNetworkOperator();
+        mcc = networkOperator.substring(0,3);
+        mnc = networkOperator.substring(3);
+
+        System.out.println("-------------------------------> mcc: "+mcc);
+        System.out.println("-------------------------------> mnc: "+mnc);
+
         int eventos = PhoneStateListener.LISTEN_CALL_STATE
                 |PhoneStateListener.LISTEN_CELL_LOCATION
                 |PhoneStateListener.LISTEN_DATA_ACTIVITY
@@ -152,13 +213,24 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
                 if (localizacion instanceof CdmaCellLocation){
                     posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLatitude())+",";
                     posicion += String.valueOf(((CdmaCellLocation) localizacion).getBaseStationLongitude());
-                    coordenadas = new LatLng(((CdmaCellLocation) localizacion).getBaseStationLatitude(),((CdmaCellLocation) localizacion).getBaseStationLongitude());
+
+                    int latitud = ((CdmaCellLocation) localizacion).getBaseStationLatitude();
+                    int longitud = ((CdmaCellLocation) localizacion).getBaseStationLongitude();
+
+                    coordenadas = new LatLng(((CdmaCellLocation) localizacion).convertQuartSecToDecDegrees(latitud),
+                            ((CdmaCellLocation) localizacion).convertQuartSecToDecDegrees(longitud));
                 }else if(localizacion instanceof GsmCellLocation){
                     posicion += String.valueOf(((GsmCellLocation) localizacion).getCid())+",";
                     posicion += String.valueOf(((GsmCellLocation) localizacion).getLac());
-                    coordenadas = new LatLng(((GsmCellLocation) localizacion).getCid(),((GsmCellLocation) localizacion).getLac());
+
+                    cellid = ((GsmCellLocation) localizacion).getCid();
+                    lac = ((GsmCellLocation) localizacion).getLac();
+
+                    System.out.println("-------------------------------> cellid: "+cellid);
+                    System.out.println("-------------------------------> lac: "+lac);
                 }
                 location.setText(posicion);
+
             }
 
             //Dirección del tráfico
@@ -185,8 +257,6 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
 
             //Potencia de la señal
             public void onSignalStrengthsChanged(SignalStrength fuerza){
-                Log.i("Fuerza", String.valueOf(fuerza.getLevel()));
-                System.out.println("FUERZA: "+fuerza.getLevel());
                 switch (fuerza.getLevel()){
                     case 0:
                         signalLevel.setImageResource(R.drawable.level1);
@@ -206,18 +276,80 @@ public class TiempoReal extends AppCompatActivity implements OnMapReadyCallback 
                 }
                 super.onSignalStrengthsChanged(fuerza);
             }
-
         };
         tm.listen(listenerTelefono, eventos);
+
     }
 
+    private void preparingURL(){
+        try {
+            //String file="http://opencellid.org/cell/get?key=" + OPENCELLID_KEY + "&mcc=" + mcc + "&mnc=" + mnc + "&lac=" + lac + "&cellid=" + cellid + "&format=json";
+            //System.out.println("URL: "+file);
+
+            String file ="http://opencellid.org/cell/get?key=9c14bfb39bdd69&mcc=214&mnc=01&lac=55526&cellid=37647840&format=json";
+            URL link = new URL(file);
+            new ManagerNet().execute(link);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    class ManagerNet extends AsyncTask<URL, Void, Pair<Double,Double>>{
+        @Override
+        protected Pair<Double,Double> doInBackground(URL... urls) {
+
+            HttpURLConnection urlConnection = null;
+
+            try{
+                URL link = urls[0];
+                urlConnection = (HttpURLConnection) link.openConnection();
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.connect();
+
+                int statusCode = urlConnection.getResponseCode();
+                if(statusCode == HttpURLConnection.HTTP_OK){
+                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                    JsonReader jsor = new JsonReader(new InputStreamReader(urlConnection.getInputStream()));
+
+                    jsor.beginObject();
+                    Double latitud = null;
+                    Double longitud = null;
+                    while (jsor.hasNext()){
+                        String key = jsor.nextName();
+                        System.out.println("............................... KEY: "+ key);
+                        if(latitud == null && "lat".equals(key)){
+                            latitud = jsor.nextDouble();
+                            System.out.println("-----------------> latitud: " + latitud.toString());
+                        }else if(longitud == null && "lon".equals(key)){
+                            longitud = jsor.nextDouble();
+                            System.out.println("-----------------> longitud: " + longitud.toString());
+                        } else{
+                            jsor.skipValue();
+                        }
+                    }
+                    jsor.endObject();
+                    return new Pair<>(latitud,longitud);
+                }
+
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Pair<Double,Double> hola) {
+                super.onPostExecute(hola);
+                coordenadas = new LatLng(hola.first, hola.second);
+        }
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        GoogleMap gMap = googleMap;
-        gMap.setMinZoomPreference(12);
-        //LatLng ny = new LatLng(40.7143528, -74.0059731);
-        //gMap.moveCamera(CameraUpdateFactory.newLatLng(ny));
-        gMap.moveCamera(CameraUpdateFactory.newLatLng(coordenadas));
+        //LatLng caceres = new LatLng(39.4694077, -6.3705542);
+        googleMap.setMinZoomPreference(12);
+        System.out.println("COORDENADAS .--------> "+ coordenadas.longitude + "," + coordenadas.latitude);
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(coordenadas));
     }
 }

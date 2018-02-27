@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
@@ -253,6 +258,8 @@
         android:text="Obtener Datos en Tiempo Real"
         android:textSize="18dp"
         android:layout_marginTop="10dp"
-        android:background="@drawable/redondeo"/>
+        android:background="@drawable/redondeo"
+        android:layout_marginBottom="20dp"/>
 
 </LinearLayout>
+</ScrollView>
